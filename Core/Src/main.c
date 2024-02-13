@@ -62,37 +62,42 @@ void EXTI0_1_IRQHandler(void);
   */
 int main(void)
 {
- 
-	RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
-	RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
-	RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+ // Enable clock for needed peripherals
+ RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
+ RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
+ RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
 	
-	SystemClock_Config();
+ SystemClock_Config();
 	
-	GPIOC->MODER |= (1<<12) | (1<<14) | (1<<16) | (1<<18);
-	GPIOC->MODER &= ~((1<<13) | (1<<15) | (1<<17) | (1<<19));
-	GPIOC->OTYPER &= ~((1<<6) | (1<<7) | (1<<8) | (1<<9));
-	GPIOC->OSPEEDR &= ~((1<<12) | (1<<14) | (1<<16) | (1<<18));
-	GPIOC->PUPDR &= ~((1<<12) | (1<<14) | (1<<16) | (1<<18)
-									| (1<<13) | (1<<15) | (1<<17) | (1<<19));
+ // Set up the leds
+ GPIOC->MODER |= (1<<12) | (1<<14) | (1<<16) | (1<<18);
+ GPIOC->MODER &= ~((1<<13) | (1<<15) | (1<<17) | (1<<19));
+ GPIOC->OTYPER &= ~((1<<6) | (1<<7) | (1<<8) | (1<<9));
+ GPIOC->OSPEEDR &= ~((1<<12) | (1<<14) | (1<<16) | (1<<18));
+ GPIOC->PUPDR &= ~((1<<12) | (1<<14) | (1<<16) | (1<<18)
+		| (1<<13) | (1<<15) | (1<<17) | (1<<19));
 	
-	GPIOA->MODER &= ~((1<<0) | (1<<1));
-	GPIOC->OSPEEDR &= ~((1<<0) | (1<<1));
-	GPIOA->PUPDR &= ~((1<<0));
-	GPIOA->PUPDR |= (1<<1);
+ // Set up the button
+ GPIOA->MODER &= ~((1<<0) | (1<<1));
+ GPIOC->OSPEEDR &= ~((1<<0) | (1<<1));
+ GPIOA->PUPDR &= ~((1<<0));
+ GPIOA->PUPDR |= (1<<1);
 	
-	EXTI->IMR |= (1<<0);
-	EXTI->EMR |= (1<<0);
-	EXTI->RTSR |= (1<<0);
+ // Configure EXTI settings
+ EXTI->IMR |= (1<<0);
+ EXTI->EMR |= (1<<0);
+ EXTI->RTSR |= (1<<0);
 	
-	SYSCFG->EXTICR[0] &= ~((1<<0) | (1<<1) | (1<<2) | (1<<3));
+ SYSCFG->EXTICR[0] &= ~((1<<0) | (1<<1) | (1<<2) | (1<<3));
 	
-	NVIC_EnableIRQ(5);
-	NVIC_SetPriority(5,1);
+ // Set the priority for interrupts
+ NVIC_EnableIRQ(5);
+ NVIC_SetPriority(5,1);
 	
-	GPIOC->ODR |= (1<<9);
-	GPIOC->ODR &= ~(1<<6);
-	GPIOC->ODR |= (1<<7);
+ // Reset the leds to on or off
+ GPIOC->ODR |= (1<<9);
+ GPIOC->ODR &= ~(1<<6);
+ GPIOC->ODR |= (1<<7);
 
 
   while (1)
