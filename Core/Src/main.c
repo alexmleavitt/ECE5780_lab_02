@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+volatile int32_t i;
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -62,49 +63,54 @@ void EXTI0_1_IRQHandler(void);
   */
 int main(void)
 {
-	// Enable clock for needed peripherals
- 	RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
- 	RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
- 	RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+  // Enable clock for needed peripherals
+	RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
+	RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
+	RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
 	
- 	SystemClock_Config();
+	SystemClock_Config();
 	
- 	// Set up the leds
- 	GPIOC->MODER |= (1<<12) | (1<<14) | (1<<16) | (1<<18);
- 	GPIOC->MODER &= ~((1<<13) | (1<<15) | (1<<17) | (1<<19));
- 	GPIOC->OTYPER &= ~((1<<6) | (1<<7) | (1<<8) | (1<<9));
- 	GPIOC->OSPEEDR &= ~((1<<12) | (1<<14) | (1<<16) | (1<<18));
- 	GPIOC->PUPDR &= ~((1<<12) | (1<<14) | (1<<16) | (1<<18)
-			| (1<<13) | (1<<15) | (1<<17) | (1<<19));
+	// Set up the leds
+	GPIOC->MODER |= (1<<12) | (1<<14) | (1<<16) | (1<<18);
+	GPIOC->MODER &= ~((1<<13) | (1<<15) | (1<<17) | (1<<19));
+	GPIOC->OTYPER &= ~((1<<6) | (1<<7) | (1<<8) | (1<<9));
+	GPIOC->OSPEEDR &= ~((1<<12) | (1<<14) | (1<<16) | (1<<18));
+	GPIOC->PUPDR &= ~((1<<12) | (1<<14) | (1<<16) | (1<<18)
+									| (1<<13) | (1<<15) | (1<<17) | (1<<19));
 	
-	 // Set up the button
- 	GPIOA->MODER &= ~((1<<0) | (1<<1));
- 	GPIOC->OSPEEDR &= ~((1<<0) | (1<<1));
- 	GPIOA->PUPDR &= ~((1<<0));
- 	GPIOA->PUPDR |= (1<<1);
+	// Set up the button
+	GPIOA->MODER &= ~((1<<0) | (1<<1));
+	GPIOC->OSPEEDR &= ~((1<<0) | (1<<1));
+	GPIOA->PUPDR &= ~((1<<0));
+	GPIOA->PUPDR |= (1<<1);
 	
-	 // Configure EXTI settings
- 	EXTI->IMR |= (1<<0);
- 	EXTI->EMR |= (1<<0);
- 	EXTI->RTSR |= (1<<0);
+	// Configure EXTI settings
+	EXTI->IMR |= (1<<0);
+	EXTI->EMR |= (1<<0);
+	EXTI->RTSR |= (1<<0);
 	
- 	SYSCFG->EXTICR[0] &= ~((1<<0) | (1<<1) | (1<<2) | (1<<3));
+	SYSCFG->EXTICR[0] &= ~((1<<0) | (1<<1) | (1<<2) | (1<<3));
 	
- 	// Set the priority for interrupts
- 	NVIC_EnableIRQ(5);
- 	NVIC_SetPriority(5,1);
+	// Set the priority for interrupts
+	// interrupt 5 is from EXTI0
+	NVIC_EnableIRQ(5);
+	NVIC_SetPriority(5,3);
+	// interrupt -1 is from SysTick
+	NVIC_SetPriority(-1,2);
 	
- 	// Reset the leds to on or off
- 	GPIOC->ODR |= (1<<9);
- 	GPIOC->ODR &= ~(1<<6);
- 	GPIOC->ODR |= (1<<7);
-	
+	// Reset the leds to on or off
+	// green and blue are on, red is off
+	GPIOC->ODR |= (1<<9);
+	GPIOC->ODR &= ~(1<<6);
+	GPIOC->ODR |= (1<<7);
 
-	  while (1)
-	  {
-		GPIOC->ODR ^= (1<<6);
-		HAL_Delay(400);
-	  }
+
+  while (1)
+  {
+		// Use HAL_Delay to toggle the red led
+	GPIOC->ODR ^= (1<<6);
+	HAL_Delay(400);
+  }
  
 }
 
@@ -144,21 +150,30 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+/**
+ * Handler for EXTI0. It will be called
+ * when the user button is pushed.
+ *
+*/
 void EXTI0_1_IRQHandler(void) 
 {
 	i = 0;
 	
+	// toggle the leds
 	GPIOC->ODR ^= (1<<8);
 	GPIOC->ODR ^= (1<<9);
 	
+	// loop to delay
 	while(i<1500000)
 	{
 		i++;
 	}
 	
+	// toggle the leds
 	GPIOC->ODR ^= (1<<8);
 	GPIOC->ODR ^= (1<<9);
 	
+	// clear the flag
 	EXTI->PR |= (1<<0);
 }
 /* USER CODE END 4 */
@@ -194,3 +209,4 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
+
